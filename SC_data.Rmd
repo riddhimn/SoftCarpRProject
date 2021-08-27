@@ -1,0 +1,97 @@
+---
+title: "SC_data"
+author: "Riddhi Mehta-Neugebauer"
+date: "8/20/2021"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+# Load Libraries
+```{r}
+library(tidyverse)
+```
+
+# Set Directory
+```{r}
+setwd("~/OneDrive - UW/Documents/eScience Institute/CRDC/SC_data")
+
+```
+
+# Load Data
+```{r}
+# list the files in the folder
+files <- list.files(path = "C:/Users/Riddhi/Downloads/2017-18-crdc-data (1)/2017-18-crdc-data-corrected-publication 2/2017-18 Public-Use Files/Data/SCH/CRDC/CSV", pattern = "*.csv", full.names = T)
+
+# apply read_csv to all the files listed in files
+data <- lapply(files, read_csv)
+```
+
+# Convert List to Dataframe
+## Rename dataframes in the list
+
+```{r}
+# rename the list elements to represent the filename
+data <- setNames(data, sub("\\.csv", "", list.files("C:/Users/Riddhi/Downloads/2017-18-crdc-data (1)/2017-18-crdc-data-corrected-publication 2/2017-18 Public-Use Files/Data/SCH/CRDC/CSV", pattern = "\\.csv")))
+
+# check the list to see the names of the dataframes
+names(data)
+```
+
+## Extract only STEM data frames
+```{r}
+# list the STEM filenames
+key_file_names <- c("Advanced Mathematics", "Algebra II",  "Biology", "Calculus", "Chemistry", "Geometry", "Physics")
+
+data_stem <- data[key_file_names]
+
+```
+
+## Extract the male and female enrollment columns for each of the STEM fields and combine into one dataframe
+```{r}
+# what are the column names in Calculus for example
+ names(data_stem[["Calculus"]])
+
+# Check with the codebook to see what code for the variable you are interested in is. I want total enrollment in each STEM class for males and females. Note the column names you are most interested in. 
+
+key_col_names <- c("LEA_STATE", "LEA_STATE_NAME", "LEAID", "LEA_NAME", "SCHID", "SCH_NAME", "COMBOKEY", "JJ", "TOT_SCIENR_BIOL_M", "TOT_SCIENR_BIOL_F", "TOT_MATHENR_CALC_M", "TOT_MATHENR_CALC_F", "TOT_SCIENR_CHEM_M", "TOT_SCIENR_CHEM_F", "TOT_MATHENR_ALG2_M", "TOT_MATHENR_ALG2_F", "TOT_MATHENR_GEOM_M", "TOT_MATHENR_GEOM_F", "TOT_SCIENR_PHYS_M", "TOT_SCIENR_PHYS_F", "TOT_MATHENR_ADVM_M", "TOT_MATHENR_ADVM_F")
+
+# Apply the select function on all the sublists
+data_stem <- lapply(data_stem, function(x) x %>% select(any_of(key_col_names)))
+
+
+```
+
+## Merge the lists into a single dataframe, based on COMBOKEY (LEAID + SCHID)
+```{r}
+data_merge <- data_stem %>% 
+  reduce(inner_join, by = c("LEA_STATE", "LEA_STATE_NAME", "LEAID", "LEA_NAME", "SCHID", "SCH_NAME", "JJ", "COMBOKEY"))
+```
+
+## Replace missing values with NA
+```{r}
+data_merge <- na_if(data_merge, "-9") # -9 = Not Applicable / Skipped
+data_merge <- na_if(data_merge, "-6") # -6 = Force Certified
+data_merge <- na_if(data_merge, "-5") # -5 = Action Plan
+
+summary(data_merge)
+```
+
+## Remove obs. with all NA values (indicator of non-high school)
+```{r}
+# Total the number of enrollments in STEM fields
+data_merge <- data_merge %>% 
+  mutate(enroll_sum = select(., TOT_MATHENR_ADVM_M, TOT_MATHENR_ADVM_F, TOT_MATHENR_ALG2_M, TOT_MATHENR_ALG2_F, TOT_SCIENR_BIOL_M, TOT_SCIENR_BIOL_F,  TOT_MATHENR_CALC_M, TOT_MATHENR_CALC_F, TOT_SCIENR_CHEM_M,  TOT_SCIENR_CHEM_F,  TOT_MATHENR_GEOM_M, TOT_MATHENR_GEOM_F, TOT_SCIENR_PHYS_M,  TOT_SCIENR_PHYS_F) %>% rowSums(na.rm = T))
+
+# Filter out the enroll_sum = 0 and those that aren't juvenile justice facility
+data_merge2 <- data_merge %>% 
+  filter(enroll_sum != 0 & JJ == "No")
+
+```
+
+
+# Analyze Data
+```{r}
+# 
+```
+
