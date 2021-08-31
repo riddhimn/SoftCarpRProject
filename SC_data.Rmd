@@ -9,22 +9,22 @@ editor_options:
 
 # Load Libraries
 ```{r}
-library(tidyverse)
+# let's call out specific packages we need rather than just loading tidyverse (I find it helps people to know what packages they're using)
+library(readr) # for reading csvs
+library(dplyr) # for data management
+library(stringr) # for working with strings
+library(purrr) # for working with lists
 ```
 
-# Set Directory
-```{r}
-setwd("~/OneDrive - UW/Documents/eScience Institute/CRDC/SC_data")
-
-```
 
 # Load Data
 ```{r}
 # list the files in the folder
-files <- list.files(path = "C:/Users/Riddhi/Downloads/2017-18-crdc-data (1)/2017-18-crdc-data-corrected-publication 2/2017-18 Public-Use Files/Data/SCH/CRDC/CSV", pattern = "*.csv", full.names = T)
+files <- list.files(path = "./CRDC_files", pattern = "*.csv", full.names = TRUE)
+
 
 # apply read_csv to all the files listed in files
-data <- lapply(files, read_csv)
+data <- lapply(files, read_csv) # using readr
 ```
 
 # Convert List to Dataframe
@@ -32,7 +32,7 @@ data <- lapply(files, read_csv)
 
 ```{r}
 # rename the list elements to represent the filename
-data <- setNames(data, sub("\\.csv", "", list.files("C:/Users/Riddhi/Downloads/2017-18-crdc-data (1)/2017-18-crdc-data-corrected-publication 2/2017-18 Public-Use Files/Data/SCH/CRDC/CSV", pattern = "\\.csv")))
+data <- setNames(data, stringr::str_replace(list.files(path = "./CRDC_files", pattern = "*.csv"), "\\.csv", "")) # running same function again but without the breadcrumb trail
 
 # check the list to see the names of the dataframes
 names(data)
